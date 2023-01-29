@@ -1,4 +1,4 @@
-const {Inflater, staticHuffmanTree, BitReader} = require('..');
+const {Inflater} = require('..');
 const fs = require('fs');
 
 describe('inflates uncompressed block', () => {
@@ -11,22 +11,6 @@ describe('inflates uncompressed block', () => {
     })
 })
 
-describe('huffman', () => {
-    it('static huffman tree', () => {
-        const huffman = staticHuffmanTree()[0];
-        const data = new Uint8Array([0b00110000, 0b00110101, 0b00001111, 0b10010000]);
-        const reader = new BitReader(data);
-        let v = huffman.readNext(reader);
-        expect(v).toEqual(0);
-        v = huffman.readNext(reader);
-        expect(v).toEqual(5);
-        v = huffman.readNext(reader);
-        expect(v).toEqual(263);
-        v = huffman.readNext(reader);
-        expect(v).toEqual(144);
-    })
-})
-
 describe('inflates static huffman block', () => {
     it('inflates codes correctly', () => {
         const payload = new Array(261).fill(0xab);
@@ -35,7 +19,6 @@ describe('inflates static huffman block', () => {
         expect(result).toEqual(new Uint8Array(payload));
     })
 })
-
 
 describe('integration', () => {
     it('inflates zeros.raw', () => {

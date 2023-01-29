@@ -2,7 +2,7 @@ function Inflater() {
 }
 
 Inflater.prototype.inflate = function (byteArray) {
-    const writer = new BitWriter();
+    const writer = new Writer();
     const reader = new BitReader(byteArray);
     this._readBlocks(reader, writer);
     return writer.asArray();
@@ -32,7 +32,7 @@ Inflater.prototype._readBlocks = function (reader, writer) {
 Inflater.prototype._readUncompressedBlock = function (reader, writer) {
     let len = reader.readUint16();
     const nlen = reader.readUint16();
-    if (~len & 65535 !== nlen) {
+    if ((~len & 65535) !== nlen) {
         throw new Error(`Len ${len} of uncompressed does not correspond to nlen ${nlen}`);
     }
     while (len--) {
@@ -95,20 +95,20 @@ Inflater.prototype._readDynamicHuffmanBlock = function (reader, writer) {
         writer);
 }
 
-function BitWriter() {
+function Writer() {
     this.arr = [];
 }
 
-BitWriter.prototype.writeByte = function (b) {
+Writer.prototype.writeByte = function (b) {
     this.arr.push(b);
 }
 
-BitWriter.prototype.copyToOutput = function (distance, length) {
+Writer.prototype.copyToOutput = function (distance, length) {
     let offset = this.arr.length - distance;
     while (length--) this.arr.push(this.arr[offset++]);
 }
 
-BitWriter.prototype.asArray = function () {
+Writer.prototype.asArray = function () {
     return new Uint8Array(this.arr);
 }
 
@@ -136,24 +136,6 @@ BitReader.prototype.readBits = function (n) {
         this.remainingBits -= bitsToTake;
         n -= bitsToTake;
         bitsTaken += bitsToTake;
-    }
-    return result;
-}
-
-BitReader.prototype.readBitsMsb = function (n) {
-    let result = 0;
-    while (n > 0) {
-        if (this.remainingBits === 0) {
-            this.remainingBits = 8;
-            this.cachedByte = this._nextByte();
-        }
-        const bitsToTake = Math.min(this.remainingBits, n);
-        const mask = (1 << (this.remainingBits - bitsToTake)) - 1;
-
-        result = result << bitsToTake | (this.cachedByte >> (this.remainingBits - bitsToTake));
-        this.cachedByte &= mask;
-        this.remainingBits -= bitsToTake;
-        n -= bitsToTake;
     }
     return result;
 }
@@ -266,7 +248,5 @@ const codeExt = new Uint8Array([2, 3, 7]); //16 - 18
 
 
 module.exports = {
-    Inflater,
-    staticHuffmanTree,
-    BitReader
+    Inflater
 }
