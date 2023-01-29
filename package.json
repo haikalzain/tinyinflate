@@ -1,0 +1,22 @@
+{
+  "name": "tinyinflate",
+  "version": "1.0.0",
+  "description": "Tiny implementation of the INFLATE algorithm",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/haikalzain/tinyinflate.git"
+  },
+  "author": "Haikal Zain",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/haikalzain/tinyinflate/issues"
+  },
+  "homepage": "https://github.com/haikalzain/tinyinflate#readme",
+  "devDependencies": {
+    "jest": "^29.4.1"
+  }
+}
