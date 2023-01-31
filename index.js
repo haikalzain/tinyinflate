@@ -1,11 +1,59 @@
 function Inflater() {
 }
 
-Inflater.prototype.inflate = function (byteArray) {
+Inflater.prototype.inflateRaw = function(byteArray) {
     const writer = new Writer();
     const reader = new BitReader(byteArray);
     this._readBlocks(reader, writer);
     return writer.asArray();
+}
+
+Inflater.prototype.inflateZlib = function(byteArray) {
+    if(byteArray.length < 3 || (byteArray[0] & 0x0f) !== 8) {
+        throw new Error('Invalid Zlib format');
+    }
+    if((byteArray[1] & 32) !== 0) {
+        throw new Error('FDICT unsupported');
+    }
+    if((((byteArray[0] << 8) | byteArray[1]) % 31) !== 0) {
+        throw new Error('Invalid Zlib format');
+    }
+    const result = this.inflateRaw(byteArray.subarray(2, byteArray.length - 4));
+    const checksum = new DataView(byteArray.buffer, byteArray.offset).getInt32(byteArray.length - 4, false);
+    if(checksum !== adler32(result)) {
+        throw new Error('Zlib checksum invalid');
+    }
+    return result;
+}
+
+Inflater.prototype.inflateGzip = function(byteArray) {
+    if(byteArray.length < 4) throw new Error('Invalid Gzip format');
+    if(byteArray[0] !== 31 || byteArray[1] !== 139 || byteArray[2] !== 8) {
+        throw new Error('Invalid Gzip format');
+    }
+    const flag = byteArray[3];
+    const dataView = new DataView(byteArray.buffer, byteArray.offset);
+    let offset = 10;
+    if((flag & 2) !== 0) { // FHCRC
+        offset += 2;
+    }
+    if((flag & 4) !== 0) { // FEXTRA
+        const xlen = dataView.getUint16(offset, true);
+        offset += 2 + xlen;
+    }
+    if((flag & 8) !== 0) { // FNAME
+        while(byteArray[offset++] !== 0){}
+    }
+    if((flag & 16) !== 0) { // FCOMMENT
+        while(byteArray[offset++] !== 0){}
+    }
+    const result = this.inflateRaw(byteArray.subarray(offset, byteArray.length - 8));
+    const checksum = dataView.getInt32(byteArray.length - 8, true);
+    //const size = dataView.getUint32(byteArray.length - 4, true);
+    if(checksum !== crc32(result)) {
+        throw new Error('Gzip checksum invalid');
+    }
+    return result;
 }
 
 Inflater.prototype._readBlocks = function (reader, writer) {
@@ -246,6 +294,46 @@ const codeOrder = new Uint8Array([
 const codeBase = new Uint8Array([3, 3, 11]);
 const codeExt = new Uint8Array([2, 3, 7]); //16 - 18
 
+let crcTable = new Uint32Array(256);
+
+function computeCrcTable() {
+    for (let n = 0; n < 256; n++) {
+        let c = n;
+        for (let k = 0; k < 8; k++) {
+            if (c & 1) {
+                c = 0xedb88320 ^ (c >>> 1);
+            } else {
+                c = c >>> 1;
+            }
+        }
+        crcTable[n] = c;
+    }
+}
+
+function adler32(buf) {
+    // see https://github.com/SheetJS/js-adler32/blob/master/adler32.js
+    let a = 1, b = 0, M = 0;
+    const L = buf.length;
+    for(let i = 0; i < L;) {
+        M = Math.min(L-i, 2654)+i;
+        for(;i<M;i++) {
+            a += buf[i]&0xFF;
+            b += a;
+        }
+        a = (15*(a>>>16)+(a&65535));
+        b = (15*(b>>>16)+(b&65535));
+    }
+    return ((b%65521) << 16) | (a%65521);
+}
+
+function crc32(buf) {
+    if(crcTable[1] === 0) computeCrcTable();
+    let c = 0xffffffff;
+    for(let n=0;n<buf.length;n++) {
+        c = crcTable[(c ^ buf[n]) & 0xff] ^ (c >>> 8);
+    }
+    return c ^ 0xffffffff;
+}
 
 module.exports = {
     Inflater
