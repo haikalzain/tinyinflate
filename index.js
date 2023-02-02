@@ -210,25 +210,29 @@ BitReader.prototype.finishCurrentByte = function () {
     this.remainingBits = 0;
 }
 
+let staticHuffmanCache = null;
 function staticHuffmanTree() {
-    const arr = new Uint8Array(288)
-    let i = 0;
-    for (; i < 144; i++) {
-        arr[i] = 8;
-    }
-    for (; i < 256; i++) {
-        arr[i] = 9;
-    }
-    for (; i < 280; i++) {
-        arr[i] = 7;
-    }
-    for (; i < 288; i++) {
-        arr[i] = 8;
-    }
+    if(staticHuffmanCache == null) {
+        const arr = new Uint8Array(288)
+        let i = 0;
+        for (; i < 144; i++) {
+            arr[i] = 8;
+        }
+        for (; i < 256; i++) {
+            arr[i] = 9;
+        }
+        for (; i < 280; i++) {
+            arr[i] = 7;
+        }
+        for (; i < 288; i++) {
+            arr[i] = 8;
+        }
 
-    const arr2 = new Uint8Array(32);
-    for (i = 0; i < 32; i++) arr2[i] = 5;
-    return [new Huffman(arr), new Huffman(arr2)];
+        const arr2 = new Uint8Array(32);
+        for (i = 0; i < 32; i++) arr2[i] = 5;
+        staticHuffmanCache = [new Huffman(arr), new Huffman(arr2)];
+    }
+    return staticHuffmanCache;
 }
 
 const MAXBITS = 15;
