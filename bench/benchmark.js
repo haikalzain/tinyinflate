@@ -27,14 +27,14 @@ const compressedGzip = fs.readFileSync('../test/samples/vs.gz');
 
 suiteGzip.add('pako', () => {
     const result = pako.inflate(compressedGzip);
-    console.assert(result.length === 101345);
+    console.assert(result.length === 49366986);
 }).add('fflate', () => {
     const result = fflate.gunzipSync(compressedGzip);
-    console.assert(result.length === 101345);
+    console.assert(result.length === 49366986);
 }).add('tinygzip', () => {
     const inflater = new Inflater();
     const result = inflater.inflateGzip(compressedGzip);
-    console.assert(result.length === 101345);
+    console.assert(result.length === 49366986);
 }).on('cycle', function(event) {
     console.log(String(event.target));
 }).run();
